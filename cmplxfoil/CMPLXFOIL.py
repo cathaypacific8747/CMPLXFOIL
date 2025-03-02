@@ -22,7 +22,6 @@ History
 # Standard Python modules
 # =============================================================================
 import os
-import time
 from copy import copy, deepcopy
 import pickle as pkl
 from collections.abc import Iterable
@@ -33,7 +32,7 @@ import warnings
 # =============================================================================
 import numpy as np
 from baseclasses import BaseSolver
-from . import MExt
+from . import libcmplxfoil, libcmplxfoil_cs
 
 # Handle plotting imports
 plt = None
@@ -73,19 +72,11 @@ class CMPLXFOIL(BaseSolver):
         Options for the solver. Available options can be found
         in the Options section of the documentation or the
         options.yaml file in the docs directory.
-    debug : bool, optional
-        Set this flag to true when debugging with a symbolic
-        debugger. The MExt module deletes the copied .so file when not
-        required which causes issues debugging, by default False
     """
 
-    def __init__(self, fileName, options={}, debug=False):
-        # Load the compiled module using MExt, allowing multiple imports
-        curDir = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
-        time.sleep(0.1)  # BOTH of these sleeps are necessary for some reason!
-        self.xfoil = MExt.MExt("libcmplxfoil", curDir, debug=debug)._module
-        time.sleep(0.1)  # BOTH of these sleeps are necessary for some reason!
-        self.xfoil_cs = MExt.MExt("libcmplxfoil_cs", curDir, debug=debug)._module
+    def __init__(self, fileName, options={}):
+        self.xfoil = libcmplxfoil
+        self.xfoil_cs = libcmplxfoil_cs
 
         super().__init__("CMPLXFOIL", "Panel Method", defaultOptions=self._getDefaultOptions(), options=options)
 

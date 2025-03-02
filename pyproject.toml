@@ -1,0 +1,35 @@
+[build-system]
+build-backend = "mesonpy"
+requires = ["meson-python", "numpy"]
+
+[project]
+name = "cmplxfoil"
+description = "A Python wrapped version of Mark Drela's XFOIL code with the GUI features removed."
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE.md" }
+dependencies = ["mdolab-baseclasses>=1.8.2"]
+classifiers = [
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Programming Language :: Fortran",
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+testing = ["testflo>=1.4.19"]
+docs = ["sphinx-mdolab-theme>=1.4.2"]
+plotting = ["matplotlib>=3", "niceplots>=2.0.0"]
+geometry = ["pygeo"] # NOTE: this depends on libspline
+
+[dependency-groups]
+lint = ["ruff>=0.9.7"]
+typing = ["mypy>=1.4.1"]
+
+[tool.ruff]
+line-length = 120

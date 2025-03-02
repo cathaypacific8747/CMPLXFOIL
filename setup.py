@@ -1,6 +1,13 @@
-from setuptools import setup
-import re
+# NOTE: the meson build system will not use this file.
+# This file is kept here for compatibility with the legacy system:
+# - setup `config/config.mk`
+# - run `make`
+# - instead of `pip3 install .` do `pip3 install setuptools` and `python3 setup.py install`.
+
 import os
+import re
+
+from setuptools import setup
 
 __version__ = re.findall(
     r"""__version__ = ["']+([0-9\.]*)["']+""",
