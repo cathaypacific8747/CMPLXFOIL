@@ -22,10 +22,15 @@ classifiers = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-testing = ["testflo>=1.4.19"]
+testing = [
+    "testflo>=1.4.19",
+    "prefoil",
+    "cmplxfoil[geometry]",
+    "cmplxfoil[plotting]",
+]
 docs = ["sphinx-mdolab-theme>=1.4.2"]
 plotting = ["matplotlib>=3", "niceplots>=2.0.0"]
-geometry = ["pygeo"] # NOTE: this depends on libspline
+geometry = ["pygeo", "pyspline"]
 
 [dependency-groups]
 lint = ["ruff>=0.9.7"]
@@ -33,3 +38,13 @@ typing = ["mypy>=1.4.1"]
 
 [tool.ruff]
 line-length = 120
+
+# NOTE: the dependencies do not exist on pypi
+# overriding to the bleeding edge master branches, which is not ideal but is the only solution we have
+[tool.uv.sources]
+pygeo = { git = "https://github.com/mdolab/pygeo.git" }
+prefoil = { git = "https://github.com/mdolab/prefoil.git" }
+# NOTE: not using mdolab/pyspline because it uses the legacy setup.py + Makefile approach
+# which cannot be installed automatically
+# overriding to my fork, which contains Meson + pyproject.toml instead.
+pyspline = { git = "https://github.com/cathaypacific8747/pyspline.git" }

@@ -1071,7 +1071,7 @@ class CMPLXFOIL(BaseSolver):
             "numberSolutions": [bool, True],  # whether to add call counter to output file names
             "xTrip": [
                 np.ndarray,
-                np.full(2, np.NaN),
+                np.full(2, np.nan),
             ],  # boundary layer trip x coordinate of upper and lower surface, respectively (two-element array)
             "nCrit": [float, 9.0],
         }

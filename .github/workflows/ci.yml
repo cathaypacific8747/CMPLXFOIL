@@ -35,10 +35,13 @@ jobs:
           # ubuntu 24.04 with architecture 'x64' does not have py37, using ubuntu 22.04 instead.
           - os: ubuntu-22.04
             python-version: "3.7"
-            toolchain:
-              - { compiler: gcc, version: 13 }
-              - { compiler: intel, version: "2025.0" }
-              - { compiler: intel-classic, version: "2021.10" }
+            toolchain: { compiler: gcc, version: 13 }
+          - os: ubuntu-22.04
+            python-version: "3.7"
+            toolchain: { compiler: intel, version: "2025.0" }
+          - os: ubuntu-22.04
+            python-version: "3.7"
+            toolchain: { compiler: intel-classic, version: "2021.10" }
         exclude:
           - os: ubuntu-latest
             python-version: "3.7"
@@ -54,9 +57,14 @@ jobs:
             toolchain: { compiler: intel, version: "2025.0" }
           - os: windows-latest
             toolchain: { compiler: intel-classic, version: "2021.10" }
+          # a bug in meson-python. not supporting it.
+          - os: windows-latest
+            python-version: "3.7"
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: mpi4py/setup-mpi@v1
 
       - uses: fortran-lang/setup-fortran@v1
         id: setup-fortran
@@ -78,6 +86,5 @@ jobs:
 
       # adding `--no-editable` to avoid https://github.com/astral-sh/uv/issues/10214
       - name: Run tests
-        continue-on-error: true
         run: |
           uv run --no-editable testflo
