@@ -1,6 +1,6 @@
 [build-system]
+requires = ["meson", "meson-python", "numpy"]
 build-backend = "mesonpy"
-requires = ["meson-python", "numpy"]
 
 [project]
 name = "cmplxfoil"
@@ -19,9 +19,15 @@ classifiers = [
     "Programming Language :: Fortran",
     "Programming Language :: Python :: 3",
 ]
-dynamic = ["version"]
+dynamic = ["version"] # provided by `./meson.build`.
+
+[project.urls]
+Documentation = "https://mdolab-cmplxfoil.readthedocs-hosted.com/en/latest/"
+Repository = "https://github.com/mdolab/cmplxfoil.git"
 
 [project.optional-dependencies]
+geometry = ["pygeo", "pyspline"]
+plotting = ["matplotlib>=3", "niceplots>=2.0.0"]
 testing = [
     "testflo>=1.4.19",
     "prefoil",
@@ -29,15 +35,11 @@ testing = [
     "cmplxfoil[plotting]",
 ]
 docs = ["sphinx-mdolab-theme>=1.4.2"]
-plotting = ["matplotlib>=3", "niceplots>=2.0.0"]
-geometry = ["pygeo", "pyspline"]
 
 [dependency-groups]
 lint = ["ruff>=0.9.7"]
 typing = ["mypy>=1.4.1"]
-
-[tool.ruff]
-line-length = 120
+# TODO: move testing and docs here once https://github.com/pypa/pip/pull/13065 is stabilised
 
 # NOTE: the dependencies do not exist on pypi
 # overriding to the bleeding edge master branches, which is not ideal but is the only solution we have
@@ -48,3 +50,29 @@ prefoil = { git = "https://github.com/mdolab/prefoil.git" }
 # which cannot be installed automatically
 # overriding to my fork, which contains Meson + pyproject.toml instead.
 pyspline = { git = "https://github.com/cathaypacific8747/pyspline.git" }
+
+[tool.ruff]
+line-length = 120
+
+[tool.cibuildwheel]
+skip = "pp* cp36* *_i686 *_ppc64le *_s390x *_armv7l"
+build-verbosity = 3
+# installing the test dependencies manually before building the project
+before-test = 'pip install "git+https://github.com/mdolab/pygeo.git" "git+https://github.com/mdolab/prefoil.git" "git+https://github.com/cathaypacific8747/pyspline.git"'
+test-extras = ["testing"]
+test-command = "testflo {project}"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-build = "bash {project}/tools/cibw_before_build_linux.sh"
+
+[tool.cibuildwheel.windows]
+# on windows, `libgcc_s_seh-1.DLL`, `libgfortran-5.DLL`, `libquadmath-0.DLL`, `libwinpthread.DLL` etc. (provided by the compiler)
+# needs to be present in the directory of the `.pyd` for avoid DLL loading errors.
+# however, meson does not make them available: https://github.com/mesonbuild/meson/issues/11878
+# delvewheel effectively repairs the wheel by copying them in.
+archs = ["AMD64"]
+before-build = "pip install delvewheel"
+before-test = 'pip install "git+https://github.com/mdolab/pygeo.git" "git+https://github.com/mdolab/prefoil.git" "git+https://github.com/cathaypacific8747/pyspline.git" && python3 -c "from pygeo import DVGeometry; print(DVGeometry)"'
+repair-wheel-command = "delvewheel repair -v --wheel-dir={dest_dir} {wheel}"

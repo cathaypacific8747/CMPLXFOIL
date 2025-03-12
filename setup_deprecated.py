@@ -1,8 +1,9 @@
 # NOTE: the meson build system will not use this file.
 # This file is kept here for compatibility with the legacy system:
 # - setup `config/config.mk`
+# - `pip3 install numpy`
 # - run `make`
-# - instead of `pip3 install .` do `pip3 install setuptools` and `python3 setup.py install`.
+# - instead of `pip3 install .` do `pip3 install setuptools` and `python3 setup_deprecated.py install`.
 
 import os
 import re
@@ -11,7 +12,7 @@ from setuptools import setup
 
 __version__ = re.findall(
     r"""__version__ = ["']+([0-9\.]*)["']+""",
-    open("cmplxfoil/__init__.py").read(),
+    open("cmplxfoil/_version.py").read(),
 )[0]
 
 this_directory = os.path.abspath(os.path.dirname(__file__))

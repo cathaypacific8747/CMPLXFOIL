@@ -32,7 +32,7 @@ import warnings
 # =============================================================================
 import numpy as np
 from baseclasses import BaseSolver
-from . import libcmplxfoil, libcmplxfoil_cs
+from cmplxfoil import libcmplxfoil, libcmplxfoil_cs
 
 # Handle plotting imports
 plt = None

@@ -1,0 +1,121 @@
+name: Build and test wheels
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+  release:
+    types:
+      - published
+
+jobs:
+  build_sdist:
+    name: Build sdist for cmplxfoil
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: ./dist/*.tar.gz
+
+  build_wheels:
+    name: Wheels for ${{ matrix.build.os }} (${{ matrix.toolchain.compiler }}, ${{ matrix.python }}-${{ matrix.build.platform }}_${{ matrix.build.arch }})
+    runs-on: ${{ matrix.build.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["cp37", "cp38", "cp39", "cp310", "cp311", "cp312", "cp313"]
+        build:
+          - { os: "ubuntu-22.04", platform: "manylinux", arch: "x86_64" }
+          - { os: "ubuntu-22.04-arm", platform: "manylinux", arch: "aarch64" }
+          - { os: "macos-13", platform: "macosx", arch: "x86_64" }
+          - { os: "macos-14", platform: "macosx", arch: "arm64" }
+          - { os: "windows-2025", platform: "win", arch: "amd64" }
+        toolchain:
+          # see https://github.com/fortran-lang/setup-fortran
+          - { compiler: gcc, version: 13 }
+          - { compiler: intel, version: "2025.0" }
+          # NOTE: intel fortran compiler classic `ifort` is deprecated and discontinued in
+          # October 2024 on all platforms, see: https://community.intel.com/t5/Intel-Fortran-Compiler/Intel-fortran-for-apple-silicon-macs/m-p/1511019#M167530
+        exclude:
+          # intel compilers do not support ARM
+          - build: { os: ubuntu-22.04-arm }
+            toolchain: { compiler: intel, version: "2025.0" }
+          - build: { platform: macosx }
+            toolchain: { compiler: intel, version: "2025.0" }
+          # macos 14.7.2 with architecture 'arm64' does not have py37, excluding it.
+          - python: "cp37"
+            build: { platform: macosx }
+          - python: "cp38"
+            build: { os: "macos-14" }
+          # delvewheel only supports py>=3.8
+          - python: "cp37"
+            build: { platform: win }
+          # upstream meson bug https://github.com/mesonbuild/meson/issues/14089
+          - build: { platform: win }
+            toolchain: { compiler: intel, version: "2025.0" }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # NOTE: on macOS and Windows, cibuildwheel builds natively so we install it on the host
+      # on manylinux, we need to call tools/cibw_before_build_linux.sh.
+
+      - name: Setup MPI on macOS and Windows
+        uses: mpi4py/setup-mpi@v1
+        if: ${{ matrix.build.platform != 'manylinux' }}
+
+      - name: Setup fortran on macOS and Windows
+        if: ${{ matrix.build.platform != 'manylinux' }}
+        uses: fortran-lang/setup-fortran@v1
+        id: setup-fortran
+        with:
+          compiler: ${{ matrix.toolchain.compiler }}
+          version: ${{ matrix.toolchain.version }}
+
+      # https://github.com/pypa/cibuildwheel/issues/563
+      - name: Set macOS deployment target
+        if: ${{ matrix.build.platform == 'macosx' }}
+        run: echo "MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d '.' -f 1-2)" >> $GITHUB_ENV
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.23.0
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.build.platform }}_${{ matrix.build.arch }}
+          # make the compiler version available within the manylinux container.
+          # NOTE: ignoring toolchain version for now.
+          CIBW_ENVIRONMENT: TOOLCHAIN_COMPILER="${{ matrix.toolchain.compiler }}"
+          CIBW_ENVIRONMENT_PASS_LINUX: TOOLCHAIN_COMPILER
+
+      - uses: actions/upload-artifact@v4
+        with:
+          path: ./wheelhouse/*.whl
+          name: wheels-${{ strategy.job-index }}
+
+  upload_all:
+    name: Upload if release
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mdolab-cmplxfoil
+    permissions:
+      id-token: write
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*gcc* # do not download wheels created by intel ifx
+          merge-multiple: true
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

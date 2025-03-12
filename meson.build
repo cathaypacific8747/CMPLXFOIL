@@ -60,7 +60,6 @@ fortran_ignore_warnings = ff.get_supported_arguments(
 fortran_args = ff.get_supported_arguments(
   '-std=legacy',
   '-fPIC',
-  '-O2',
   '-fdefault-real-8',
   '-r8', # intel ifx
 )
@@ -146,6 +145,7 @@ py3.extension_module('libcmplxfoil_cs',
 
 py3.install_sources(
   [
+    'cmplxfoil/_version.py',
     'cmplxfoil/__init__.py',
     'cmplxfoil/CMPLXFOIL.py',
     'cmplxfoil/postprocess.py',
